@@ -1,0 +1,855 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+
+:root {
+    --primary: #00f0ff;          /* Cian Neón */
+    --secondary: #ff007f;        /* Magenta / Rosa Neón */
+    --accent: #39ff14;           /* Verde Neón / Ácido */
+    --bg-main: #060713;          /* Espacio profundo / Negro Cyberpunk */
+    --panel-bg: rgba(11, 12, 28, 0.85); /* Cristal Oscuro */
+    --panel-hover: rgba(15, 17, 36, 0.95);
+    --text: #e2e8f0;             /* Blanco azulado de alta visibilidad */
+    --muted: #8d99ae;
+    --text-glow: 0 0 8px rgba(0, 240, 255, 0.6);
+    --box-glow: 0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.1);
+    
+    /* Textura de Acero/Metal Líquido Pulido */
+    --metal-grad: linear-gradient(180deg, #3a3d46 0%, #1c1e22 45%, #0f1012 55%, #1e2024 100%);
+    --metal-grad-hover: linear-gradient(180deg, #4c515c 0%, #27292e 45%, #16171a 55%, #2d3037 100%);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text);
+    line-height: 1.55;
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Fondo espacial intergaláctico */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+        radial-gradient(1.2px 1.2px at 7% 16%, rgba(0, 240, 255, .95), transparent 75%),
+        radial-gradient(1.5px 1.5px at 18% 66%, rgba(255, 0, 127, .86), transparent 76%),
+        radial-gradient(1.1px 1.1px at 34% 32%, rgba(226, 232, 240, .9), transparent 74%),
+        radial-gradient(1.4px 1.4px at 51% 22%, rgba(57, 255, 20, .9), transparent 74%),
+        radial-gradient(1.8px 1.8px at 13% 45%, rgba(255, 255, 255, .95), transparent 76%),
+        radial-gradient(2px 2px at 73% 14%, rgba(226, 232, 240, .95), transparent 78%);
+    opacity: 0.74;
+    animation: starsDrift 24s linear infinite;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 10% 10%, rgba(0, 240, 255, .15), transparent 34%),
+        radial-gradient(circle at 84% 6%, rgba(57, 255, 20, .1), transparent 36%),
+        radial-gradient(circle at 76% 74%, rgba(255, 0, 127, .1), transparent 40%);
+    opacity: 0.6;
+}
+
+@keyframes starsDrift {
+    from { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+    to { transform: translateY(0); }
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 10px var(--primary), 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+header {
+    background: linear-gradient(180deg, rgba(6, 7, 19, 0.9), transparent);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 240, 255, 0.1);
+    color: white;
+    padding: 1.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+nav {
+    display: flex;
+    gap: 1rem;
+}
+
+nav button {
+    background: var(--panel-bg);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    color: var(--text);
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+}
+
+nav button.active, nav button:hover {
+    background-color: rgba(0, 240, 255, 0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--box-glow);
+    text-shadow: var(--text-glow);
+}
+
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+}
+
+.screen {
+    display: none;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: var(--panel-bg);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.admin-actions {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    background-color: var(--panel-bg);
+    color: var(--text);
+    border: 1px solid var(--primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 0 5px rgba(0, 240, 255, 0.1);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2);
+    color: var(--primary);
+    text-shadow: var(--text-glow);
+}
+
+.btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.4);
+}
+
+.btn-add {
+    border-color: var(--secondary);
+    box-shadow: inset 0 0 5px rgba(255, 0, 127, 0.1);
+}
+.btn-add:hover {
+    color: var(--secondary);
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2);
+    text-shadow: 0 0 8px rgba(255, 0, 127, 0.6);
+}
+
+.btn-download {
+    border-color: var(--accent);
+}
+.btn-download:hover {
+    color: var(--accent);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.4), inset 0 0 10px rgba(57, 255, 20, 0.2);
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+}
+
+.btn-danger {
+    border-color: #d62828;
+    color: #ff4d4d;
+}
+.btn-danger:hover {
+    background-color: rgba(214, 40, 40, 0.2);
+    box-shadow: 0 0 15px rgba(214, 40, 40, 0.5);
+    color: #ffb3b3;
+}
+
+.btn-secondary {
+    border-color: var(--muted);
+    color: var(--muted);
+}
+.btn-secondary:hover {
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+.btn-play {
+    border-color: var(--accent);
+    background: rgba(57, 255, 20, 0.1);
+    color: var(--accent);
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: var(--panel-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--primary);
+    box-shadow: var(--box-glow);
+}
+
+.card img, .card video {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+    filter: brightness(0.8) contrast(1.1);
+    transition: filter 0.3s ease;
+}
+
+.card:hover img, .card:hover video {
+    filter: brightness(1) contrast(1.1);
+}
+
+.card-title {
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-align: center;
+    background: var(--panel-bg);
+    color: var(--text);
+    letter-spacing: 1px;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.gallery-item {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: #000;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    transition: all 0.2s ease;
+    filter: brightness(0.7);
+}
+
+.gallery-item:hover {
+    filter: brightness(1.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    transform: scale(1.03);
+}
+
+.gallery-item.selected {
+    border: 2px solid var(--secondary);
+    filter: brightness(0.4) sepia(1) hue-rotate(300deg);
+    transform: scale(0.95);
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+}
+
+/* Modales */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(6, 7, 19, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--panel-bg);
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--secondary);
+    transition: text-shadow 0.2s;
+}
+
+.modal-close:hover {
+    text-shadow: 0 0 10px var(--secondary);
+}
+
+.modal-content h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+    color: var(--primary);
+}
+
+.modal-help {
+    font-size: 0.95rem; 
+    color: var(--muted); 
+    margin-bottom: 1rem;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.modal-select, .modal-input {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    background: rgba(6, 7, 19, 0.8);
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    font-family: 'Rajdhani', sans-serif;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.modal-select:focus, .modal-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.modal-select option {
+    background: #0f1012;
+    color: var(--text);
+}
+
+/* Lightbox individual */
+.lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(6, 7, 19, 0.95);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+.lightbox.active {
+    display: flex;
+}
+
+#lightbox-media-container img, #lightbox-media-container video {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.1);
+    border-radius: 8px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: var(--secondary);
+    font-size: 40px;
+    cursor: pointer;
+    transition: text-shadow 0.2s;
+}
+.lightbox-close:hover {
+    text-shadow: 0 0 15px var(--secondary);
+}
+
+/* Presentación Pantalla Completa (Slideshow) */
+.slideshow {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    z-index: 3000;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.slideshow.active {
+    display: flex;
+}
+
+#slideshow-media-container {
+    width: 100%;
+    height: 85vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#slideshow-media-container img, #slideshow-media-container video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.slideshow-controls {
+    height: 15vh;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+/* --- CSS de la Sección Sueños y Calendario Grid --- */
+.calendar-wrapper {
+    overflow-x: auto;
+    background: var(--panel-bg) !important;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(7, minmax(130px, 1fr));
+    background-color: rgba(0, 240, 255, 0.1);
+    gap: 1px;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    margin-top: 1rem;
+}
+
+.calendar-header {
+    background-color: rgba(6, 7, 19, 0.9);
+    color: var(--primary);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.calendar-time-cell {
+    background-color: rgba(11, 12, 28, 0.9);
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.5rem 0.2rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.calendar-cell {
+    background-color: rgba(15, 17, 36, 0.6);
+    min-height: 50px;
+    cursor: pointer;
+    position: relative;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.calendar-cell:hover {
+    background-color: rgba(0, 240, 255, 0.1);
+    box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.event-badge {
+    font-size: 0.8rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    line-height: 1.2;
+    word-break: break-word;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    font-family: 'Rajdhani', sans-serif;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Colores Neón para Calendario */
+.bg-viaje-salida { background: linear-gradient(135deg, #2164ff, #1e3a8a) !important; border-color: #3b82f6 !important; }
+.bg-viaje-llegada { background: linear-gradient(135deg, #1e3a8a, #3b82f6) !important; border-color: #60a5fa !important; }
+.bg-hospedaje-checkin { background: linear-gradient(135deg, #11fabc, #059669) !important; border-color: #34d399 !important; }
+.bg-hospedaje-checkout { background: linear-gradient(135deg, #005f41, #10b981) !important; border-color: #6ee7b7 !important; }
+.bg-actividad { background: linear-gradient(135deg, #ffe607, #fffc4e) !important; border-color: #fffd7b !important; }
+.bg-restaurante { background: linear-gradient(135deg, #7f1d1d, #e11d48) !important; border-color: var(--secondary) !important; }
+
+.cell-blocked {
+    position: relative;
+}
+.cell-blocked::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+/* --- CSS DEL MAPA INTERACTIVO D3 --- */
+#screen-mapa {
+    height: calc(100vh - 65px);
+    position: relative;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+}
+
+#screen-mapa.active,
+#screen-mapa[style*="display: block"],
+#screen-mapa[style*="display: flex"] {
+    display: flex !important;
+}
+
+main:has(#screen-mapa.active),
+main:has(#screen-mapa[style*="display: block"]) {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+}
+body:has(#screen-mapa.active) {
+    overflow: hidden;
+}
+
+#world-map {
+    width: 100%; 
+    height: 100%; 
+    position: relative; 
+    overflow: hidden; 
+    border-radius: 22px;
+    background: radial-gradient(circle at center, rgba(6, 7, 19, 0.95) 0%, #000000 100%);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+#world-map svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* --- CSS DEL MAPA INTERACTIVO D3 --- */
+#world-map {
+    width: 100%; 
+    height: 100%; 
+    position: relative; 
+    overflow: hidden; 
+    border-radius: 40px;
+    background: radial-gradient(circle, #a2d2ff 0%, #70a1ff 100%);
+    border: 5px solid #000;
+    font-family: 'Fredoka', 'Rajdhani', sans-serif;
+    box-shadow: none;
+}
+
+#world-map svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.pais {
+    fill: #a8e6cf; 
+    stroke: #2f3e46; 
+    stroke-width: 2px; 
+    transition: all 0.25s; 
+    stroke-linejoin: round;
+}
+
+.pais:hover {
+    fill: #ffe66d; 
+    cursor: pointer;
+    filter: none;
+}
+
+.pais.visitado { 
+    fill: #ff8b94 !important; 
+    stroke: #2f3e46; 
+    stroke-width: 2.5px; 
+}
+.pais.visitado:hover {
+    fill: #ff747f !important;
+    stroke: #2f3e46;
+}
+
+.provincia {
+    fill: #dcedc1; 
+    stroke: #2f3e46; 
+    stroke-width: 0.5px; 
+    transition: all 0.25s ease;
+}
+
+.provincia:hover { 
+    fill: #ffe66d; 
+    cursor: pointer; 
+    filter: none;
+}
+
+.provincia.visitada, .provincia.visitado { 
+    fill: #ff8b94 !important; 
+    stroke: #2f3e46;
+}
+
+/* Modificadores de estado (sueños/futuro) */
+.pais.sonado, .provincia.sonada { 
+    fill: #ffd3b6 !important; 
+    stroke: #2f3e46; 
+}
+
+.pais.visitado.sonado { 
+    fill: #ffaaa5 !important; 
+    stroke: #2f3e46;
+}
+
+#screen-mapa {
+    height: calc(98vh - 90px);
+    position: relative;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+}
+
+#screen-mapa.active,
+#screen-mapa[style*="display: block"],
+#screen-mapa[style*="display: flex"] {
+    display: flex !important;
+}
+
+main:has(#screen-mapa.active),
+main:has(#screen-mapa[style*="display: block"]) {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+}
+
+body:has(#screen-mapa.active) {
+    overflow: hidden;
+}
+
+button[onclick="volverAlMundo()"] {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10;
+    background-color: #8d99ae;
+    color: white;
+    border: 3px solid #000;
+    padding: 0.6rem 1.2rem;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 5px 0 #000;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+}
+
+#tooltip {
+    position: absolute; 
+    background: #ffffff; 
+    border: 4px solid var(--secondary);
+    padding: 10px 20px; 
+    border-radius: 30px; 
+    color: var(--secondary); 
+    pointer-events: none;
+    font-weight: 800; 
+    font-size: 1.1rem; 
+    box-shadow: 0 0 20px rgba(255, 0, 127, 0.3); 
+    z-index: 2000;
+    transform: translate(-50%, -130%); 
+    transition: opacity 0.2s;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: none;
+}
+
+#menu-contextual {
+    position: absolute; 
+    background: #059100; 
+    border: 4px solid rgba(0, 0, 0, 0.3);
+    border-radius: 15px; 
+    padding: 18px; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); 
+    z-index: 1000; 
+    min-width: 220px;
+    backdrop-filter: none;
+}
+
+#menu-titulo {
+    font-family: 'Rajdhani', sans-serif !important;
+    color: #ffffff !important;
+    text-shadow: none;
+    font-size: 1.2rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+#menu-contextual div[style*="border-bottom"] {
+    border-bottom: 2px solid #F8BBD0 !important;
+}
+
+.menu-item {
+    padding: 10px; 
+    background: #ffffff; 
+    border-radius: 8px; 
+    cursor: pointer;
+    font-weight: 600; 
+    font-family: 'Baloo 2', 'Rajdhani', sans-serif !important; 
+    transition: 0.2s;
+    color: #000; 
+    font-size: 1.1rem;
+    border: none;
+}
+
+.menu-item:hover {
+    background: var(--primary); 
+    color: #000;
+    box-shadow: none;
+    transform: none;
+}
+.celda-calendario {
+    border: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    transition: background-color 0.2s;
+    min-height: 100px;
+    padding: 4px;
+    position: relative;
+}
+
+/* Celda cuando pasas el mouse por encima (Efecto rejilla Excel) */
+.celda-calendario:hover {
+    background-color: #f7f9fa;
+    border: 1px solid #4a90e2;
+}
+
+/* Estilo base mejorado para las etiquetas */
+.etiqueta-calendario {
+    margin: 3px 0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    outline: none;
+}
+
+/* Cuando una etiqueta está seleccionada para copiar/cortar/editar (Estilo Excel) */
+.etiqueta-calendario.seleccionada {
+    outline: 2px dashed #0077f7 !important;
+    box-shadow: 0 0 8px rgba(0, 86, 179, 0.5) !important;
+    transform: scale(1.02);
+}
+
+/* Estilo base mejorado para las etiquetas */
+.etiqueta-calendario {
+    margin: 3px 0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff; /* Texto blanco para mejor contraste */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+    outline: none;
+}
+
+/* Cuando una etiqueta está seleccionada para copiar/cortar */
+.etiqueta-calendario.seleccionada {
+    outline: 2px dashed #0056b3;
+    box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
+    transform: scale(1.02);
+}
