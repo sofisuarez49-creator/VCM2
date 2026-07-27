@@ -669,6 +669,7 @@ let aventurasGuardadas = [];
 let aventuraActiva = null;
 let aventuraEventos = [];
 let eventoEnEdicion = null;
+let eventosSeleccionados = [];
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const HORA_INICIO = 7;
@@ -684,6 +685,48 @@ function obtenerIntervalosHorarios() {
 }
 
 const INTERVALOS_HORARIOS = obtenerIntervalosHorarios();
+
+function obtenerEventosParaMover(draggedIndex) {
+    const index = Number(draggedIndex);
+    if (!Number.isInteger(index) || !aventuraEventos[index]) return [];
+
+    const indicesParaMover = eventosSeleccionados.includes(index) ? eventosSeleccionados : [index];
+    return indicesParaMover
+        .filter((idx, pos, arr) => Number.isInteger(idx) && arr.indexOf(idx) === pos && aventuraEventos[idx])
+        .map(idx => ({ index: idx, evento: aventuraEventos[idx] }));
+}
+
+function validarMovimientoEventos(eventosParaMover, deltaDay, deltaSlot) {
+    const maxDay = (MAX_SEMANAS * 7) - 1;
+    const maxSlot = INTERVALOS_HORARIOS.length - 1;
+    const slotsPorDia = INTERVALOS_HORARIOS.length;
+    const totalSlotsCalendario = MAX_SEMANAS * 7 * slotsPorDia;
+
+    return eventosParaMover.every(({ evento }) => {
+        const nuevoDay = evento.day + deltaDay;
+        const nuevoSlot = evento.slot + deltaSlot;
+        const durationSlots = Math.max(1, Number(evento.durationSlots) || 1);
+        const inicioAbsoluto = (nuevoDay * slotsPorDia) + nuevoSlot;
+        const finAbsolutoExclusivo = inicioAbsoluto + durationSlots;
+
+        return nuevoDay >= 0 && nuevoDay <= maxDay
+            && nuevoSlot >= 0 && nuevoSlot <= maxSlot
+            && inicioAbsoluto >= 0
+            && finAbsolutoExclusivo <= totalSlotsCalendario;
+    });
+}
+
+function alternarSeleccionEvento(index, badge) {
+    const posicion = eventosSeleccionados.indexOf(index);
+    if (posicion === -1) {
+        eventosSeleccionados.push(index);
+        badge.classList.add('seleccionada');
+    } else {
+        eventosSeleccionados.splice(posicion, 1);
+        badge.classList.remove('seleccionada');
+    }
+}
+
 
 async function openAventuraModal() {
     document.getElementById('modal-crear-aventura').classList.add('active');
@@ -770,6 +813,7 @@ function confirmarCrearAventura() {
     };
     
     aventuraEventos = [];
+    eventosSeleccionados = [];
     semanaActual = 0;
     
     abrirCalendarioSuenos();
@@ -872,7 +916,10 @@ function renderCalendario() {
             infoCelda.eventos.forEach(ev => {
                 const originalIndex = aventuraEventos.indexOf(ev);
                 const badge = document.createElement('div');
-                badge.className = `event-badge bg-${ev.tipo}`;
+                badge.className = `event-badge etiqueta-calendario bg-${ev.tipo}`;
+                if (eventosSeleccionados.includes(originalIndex)) {
+                    badge.classList.add('seleccionada');
+                }
                 badge.style.display = 'flex';
                 badge.style.justifyContent = 'space-between';
                 badge.style.alignItems = 'center';
@@ -893,6 +940,9 @@ function renderCalendario() {
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation();
                     aventuraEventos.splice(originalIndex, 1);
+                    eventosSeleccionados = eventosSeleccionados
+                        .filter(index => index !== originalIndex)
+                        .map(index => index > originalIndex ? index - 1 : index);
                     renderCalendario();
                 };
                 badge.appendChild(deleteBtn);
@@ -900,10 +950,19 @@ function renderCalendario() {
                 badge.draggable = true;
                 badge.ondragstart = (e) => {
                     e.dataTransfer.setData('text/plain', originalIndex);
+                    e.dataTransfer.setData('application/json', JSON.stringify({
+                        draggedIndex: originalIndex,
+                        originDay: ev.day,
+                        originSlot: ev.slot
+                    }));
                 };
                 
                 badge.onclick = (e) => {
                     e.stopPropagation();
+                    if (e.ctrlKey || e.metaKey) {
+                        alternarSeleccionEvento(originalIndex, badge);
+                        return;
+                    }
                     abrirEdicionEvento(originalIndex);
                 };
                 
@@ -912,12 +971,33 @@ function renderCalendario() {
             cell.ondragover = (e) => e.preventDefault();
             cell.ondrop = (e) => {
                 e.preventDefault();
-                const draggedIndex = e.dataTransfer.getData('text/plain');
-                if (draggedIndex !== "") {
+                const draggedIndexRaw = e.dataTransfer.getData('text/plain');
+                const draggedIndex = Number(draggedIndexRaw);
+                if (draggedIndexRaw !== "" && Number.isInteger(draggedIndex)) {
+                    let dragData = {};
+                    try {
+                        dragData = JSON.parse(e.dataTransfer.getData('application/json') || '{}');
+                    } catch (error) {
+                        dragData = {};
+                    }
+
                     const ev = aventuraEventos[draggedIndex];
                     if (ev) {
-                        ev.day = diaAbsoluto;
-                        ev.slot = slotIdx;
+                        const originDay = Number.isInteger(dragData.originDay) ? dragData.originDay : ev.day;
+                        const originSlot = Number.isInteger(dragData.originSlot) ? dragData.originSlot : ev.slot;
+                        const deltaDay = diaAbsoluto - originDay;
+                        const deltaSlot = slotIdx - originSlot;
+                        const eventosParaMover = obtenerEventosParaMover(draggedIndex);
+
+                        if (!validarMovimientoEventos(eventosParaMover, deltaDay, deltaSlot)) {
+                            alert('No se puede mover la selección: uno o más eventos quedarían fuera del calendario.');
+                            return;
+                        }
+
+                        eventosParaMover.forEach(({ evento }) => {
+                            evento.day += deltaDay;
+                            evento.slot += deltaSlot;
+                        });
                         renderCalendario();
                     }
                 }
@@ -1139,6 +1219,7 @@ function renderAventurasGuardadas() {
         const card = createCard(data.aventura.titulo, portadaPath, () => {
             aventuraActiva = data.aventura;
             aventuraEventos = data.eventos;
+            eventosSeleccionados = [];
             semanaActual = 0;
             abrirCalendarioSuenos();
             renderCalendario();
