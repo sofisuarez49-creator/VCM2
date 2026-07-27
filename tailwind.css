@@ -1,6 +1,0 @@
-/*
-  Archivo de compatibilidad.
-  Algunas versiones antiguas del proyecto referenciaban `tailwind.css`.
-  Para evitar 404, este archivo reexporta los estilos actuales.
-*/
-@import url('./styles.css');
