@@ -855,6 +855,7 @@ function confirmarCrearAventura() {
     };
     
     aventuraEventos = [];
+    eventosSeleccionados = [];
     semanaActual = 0;
     
     abrirCalendarioSuenos();
@@ -989,6 +990,9 @@ function renderCalendario() {
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation();
                     aventuraEventos.splice(originalIndex, 1);
+                    eventosSeleccionados = eventosSeleccionados
+                        .filter(index => index !== originalIndex)
+                        .map(index => index > originalIndex ? index - 1 : index);
                     renderCalendario();
                 };
                 const editBtn = document.createElement('span');
@@ -1009,6 +1013,11 @@ function renderCalendario() {
                 badge.draggable = true;
                 badge.ondragstart = (e) => {
                     e.dataTransfer.setData('text/plain', originalIndex);
+                    e.dataTransfer.setData('application/json', JSON.stringify({
+                        draggedIndex: originalIndex,
+                        originDay: ev.day,
+                        originSlot: ev.slot
+                    }));
                 };
                 
                 badge.onclick = (e) => {
@@ -1027,8 +1036,16 @@ function renderCalendario() {
             cell.ondragover = (e) => e.preventDefault();
             cell.ondrop = (e) => {
                 e.preventDefault();
-                const draggedIndex = e.dataTransfer.getData('text/plain');
-                if (draggedIndex !== "") {
+                const draggedIndexRaw = e.dataTransfer.getData('text/plain');
+                const draggedIndex = Number(draggedIndexRaw);
+                if (draggedIndexRaw !== "" && Number.isInteger(draggedIndex)) {
+                    let dragData = {};
+                    try {
+                        dragData = JSON.parse(e.dataTransfer.getData('application/json') || '{}');
+                    } catch (error) {
+                        dragData = {};
+                    }
+
                     const ev = aventuraEventos[draggedIndex];
                     if (ev) {
                         ev.day = diaAbsoluto;
@@ -1305,6 +1322,7 @@ function renderAventurasGuardadas() {
         const card = createCard(data.aventura.titulo, portadaPath, () => {
             aventuraActiva = data.aventura;
             aventuraEventos = data.eventos;
+            eventosSeleccionados = [];
             semanaActual = 0;
             abrirCalendarioSuenos();
             renderCalendario();
