@@ -669,6 +669,11 @@ let aventurasGuardadas = [];
 let aventuraActiva = null;
 let aventuraEventos = [];
 let eventoEnEdicion = null;
+let eventosSeleccionados = new Set();
+let celdaActiva = null;
+let ultimoEventoSeleccionado = null;
+let portapapelesEventos = [];
+let portapapelesModoCorte = false;
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const HORA_INICIO = 7;
@@ -684,6 +689,86 @@ function obtenerIntervalosHorarios() {
 }
 
 const INTERVALOS_HORARIOS = obtenerIntervalosHorarios();
+
+function normalizarSeleccionEventos() {
+    eventosSeleccionados = new Set(
+        [...eventosSeleccionados].filter(index => Number.isInteger(index) && index >= 0 && index < aventuraEventos.length)
+    );
+    if (ultimoEventoSeleccionado !== null && !eventosSeleccionados.has(ultimoEventoSeleccionado)) {
+        ultimoEventoSeleccionado = eventosSeleccionados.size ? [...eventosSeleccionados].at(-1) : null;
+    }
+}
+
+function seleccionarEventoCalendario(index, event = {}) {
+    if (!Number.isInteger(index) || index < 0 || index >= aventuraEventos.length) return;
+
+    if (event.shiftKey && ultimoEventoSeleccionado !== null) {
+        const inicio = Math.min(ultimoEventoSeleccionado, index);
+        const fin = Math.max(ultimoEventoSeleccionado, index);
+        eventosSeleccionados.clear();
+        for (let i = inicio; i <= fin; i++) eventosSeleccionados.add(i);
+    } else if (event.ctrlKey || event.metaKey) {
+        if (eventosSeleccionados.has(index)) {
+            eventosSeleccionados.delete(index);
+        } else {
+            eventosSeleccionados.add(index);
+            ultimoEventoSeleccionado = index;
+        }
+    } else {
+        eventosSeleccionados.clear();
+        eventosSeleccionados.add(index);
+        ultimoEventoSeleccionado = index;
+    }
+
+    renderCalendario();
+}
+
+function limpiarSeleccionCalendario() {
+    eventosSeleccionados.clear();
+    celdaActiva = null;
+    ultimoEventoSeleccionado = null;
+    renderCalendario();
+}
+
+function eliminarEventosSeleccionados() {
+    if (!eventosSeleccionados.size) return;
+    aventuraEventos = aventuraEventos.filter((_, index) => !eventosSeleccionados.has(index));
+    eventosSeleccionados.clear();
+    ultimoEventoSeleccionado = null;
+    renderCalendario();
+}
+
+function copiarEventosSeleccionados(cortar = false) {
+    if (!eventosSeleccionados.size) return;
+    const indices = [...eventosSeleccionados].sort((a, b) => a - b);
+    portapapelesEventos = indices.map(index => ({ ...aventuraEventos[index] }));
+    portapapelesModoCorte = cortar;
+}
+
+function pegarEventosSeleccionados() {
+    if (!portapapelesEventos.length || !celdaActiva) return;
+
+    const origen = portapapelesEventos[0];
+    const deltaDay = celdaActiva.day - origen.day;
+    const deltaSlot = celdaActiva.slot - origen.slot;
+    const nuevosEventos = portapapelesEventos.map(ev => ({
+        ...ev,
+        day: Math.max(0, Math.min((MAX_SEMANAS * 7) - 1, ev.day + deltaDay)),
+        slot: Math.max(0, Math.min(INTERVALOS_HORARIOS.length - 1, ev.slot + deltaSlot))
+    }));
+
+    if (portapapelesModoCorte) {
+        aventuraEventos = aventuraEventos.filter((_, index) => !eventosSeleccionados.has(index));
+        eventosSeleccionados.clear();
+        portapapelesModoCorte = false;
+    }
+
+    const primerNuevoIndice = aventuraEventos.length;
+    aventuraEventos.push(...nuevosEventos);
+    eventosSeleccionados = new Set(nuevosEventos.map((_, i) => primerNuevoIndice + i));
+    ultimoEventoSeleccionado = primerNuevoIndice;
+    renderCalendario();
+}
 
 async function openAventuraModal() {
     document.getElementById('modal-crear-aventura').classList.add('active');
@@ -799,6 +884,7 @@ function cambiarSemana(direccion) {
 }
 
 function renderCalendario() {
+    normalizarSeleccionEventos();
     const grid = document.getElementById('suenos-calendario-grid');
     grid.innerHTML = '';
     
@@ -861,6 +947,12 @@ function renderCalendario() {
             const diaAbsoluto = (semanaActual * 7) + dayIdx;
             const cell = document.createElement('div');
             cell.className = 'calendar-cell';
+            cell.tabIndex = 0;
+            cell.dataset.day = diaAbsoluto;
+            cell.dataset.slot = slotIdx;
+            if (celdaActiva && celdaActiva.day === diaAbsoluto && celdaActiva.slot === slotIdx) {
+                cell.classList.add('seleccionada');
+            }
             
             const infoCelda = matrizCeldas[diaAbsoluto][slotIdx];
             
@@ -873,6 +965,10 @@ function renderCalendario() {
                 const originalIndex = aventuraEventos.indexOf(ev);
                 const badge = document.createElement('div');
                 badge.className = `event-badge bg-${ev.tipo}`;
+                badge.dataset.eventIndex = originalIndex;
+                if (eventosSeleccionados.has(originalIndex)) {
+                    badge.classList.add('seleccionada');
+                }
                 badge.style.display = 'flex';
                 badge.style.justifyContent = 'space-between';
                 badge.style.alignItems = 'center';
@@ -895,6 +991,19 @@ function renderCalendario() {
                     aventuraEventos.splice(originalIndex, 1);
                     renderCalendario();
                 };
+                const editBtn = document.createElement('span');
+                editBtn.innerHTML = '✎';
+                editBtn.style.cursor = 'pointer';
+                editBtn.style.fontWeight = 'bold';
+                editBtn.style.fontSize = '1rem';
+                editBtn.style.color = '#ffffff';
+                editBtn.style.padding = '0 2px';
+                editBtn.title = 'Editar etiqueta';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    abrirEdicionEvento(originalIndex);
+                };
+                badge.appendChild(editBtn);
                 badge.appendChild(deleteBtn);
                 
                 badge.draggable = true;
@@ -903,6 +1012,12 @@ function renderCalendario() {
                 };
                 
                 badge.onclick = (e) => {
+                    e.stopPropagation();
+                    celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                    seleccionarEventoCalendario(originalIndex, e);
+                };
+
+                badge.ondblclick = (e) => {
                     e.stopPropagation();
                     abrirEdicionEvento(originalIndex);
                 };
@@ -918,16 +1033,67 @@ function renderCalendario() {
                     if (ev) {
                         ev.day = diaAbsoluto;
                         ev.slot = slotIdx;
+                        celdaActiva = { day: diaAbsoluto, slot: slotIdx };
                         renderCalendario();
                     }
                 }
             };
             
-            cell.onclick = () => openEventoModal(diaAbsoluto, slotIdx);
+            cell.onclick = () => {
+                celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                eventosSeleccionados.clear();
+                ultimoEventoSeleccionado = null;
+                renderCalendario();
+                openEventoModal(diaAbsoluto, slotIdx);
+            };
+            cell.onfocus = () => {
+                celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                document.querySelectorAll('.calendar-cell.seleccionada').forEach(c => c.classList.remove('seleccionada'));
+                cell.classList.add('seleccionada');
+            };
             grid.appendChild(cell);
         });
     });
 }
+
+
+document.addEventListener('keydown', (e) => {
+    const target = e.target;
+    const estaEditandoTexto = target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+    );
+
+    if (estaEditandoTexto) return;
+
+    if ((e.key === 'Delete' || e.key === 'Backspace') && eventosSeleccionados.size) {
+        e.preventDefault();
+        eliminarEventosSeleccionados();
+        return;
+    }
+
+    if (e.key === 'Escape' && (eventosSeleccionados.size || celdaActiva)) {
+        e.preventDefault();
+        limpiarSeleccionCalendario();
+        return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'c' && eventosSeleccionados.size) {
+            e.preventDefault();
+            copiarEventosSeleccionados(false);
+        } else if (key === 'x' && eventosSeleccionados.size) {
+            e.preventDefault();
+            copiarEventosSeleccionados(true);
+        } else if (key === 'v' && portapapelesEventos.length && celdaActiva) {
+            e.preventDefault();
+            pegarEventosSeleccionados();
+        }
+    }
+});
 
 function openEventoModal(dayIdx, slotIdx) {
     eventoEnEdicion = null;

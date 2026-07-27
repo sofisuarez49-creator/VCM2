@@ -550,6 +550,20 @@ main {
     border: 1px solid rgba(255,255,255,0.2);
 }
 
+.calendar-cell.seleccionada {
+    outline: 2px dashed #00f0ff;
+    outline-offset: -3px;
+    background-color: rgba(0, 240, 255, 0.14);
+    box-shadow: inset 0 0 14px rgba(0, 240, 255, 0.35);
+}
+
+.event-badge.seleccionada,
+.etiqueta-calendario.seleccionada {
+    outline: 2px dashed #0077f7 !important;
+    box-shadow: 0 0 8px rgba(0, 86, 179, 0.5), 0 0 14px rgba(0, 240, 255, 0.45) !important;
+    transform: scale(1.02);
+}
+
 /* Colores Neón para Calendario */
 .bg-viaje-salida { background: linear-gradient(135deg, #2164ff, #1e3a8a) !important; border-color: #3b82f6 !important; }
 .bg-viaje-llegada { background: linear-gradient(135deg, #1e3a8a, #3b82f6) !important; border-color: #60a5fa !important; }
@@ -824,6 +838,7 @@ button[onclick="volverAlMundo()"] {
 }
 
 /* Cuando una etiqueta está seleccionada para copiar/cortar/editar (Estilo Excel) */
+.event-badge.seleccionada,
 .etiqueta-calendario.seleccionada {
     outline: 2px dashed #0077f7 !important;
     box-shadow: 0 0 8px rgba(0, 86, 179, 0.5) !important;
@@ -848,6 +863,7 @@ button[onclick="volverAlMundo()"] {
 }
 
 /* Cuando una etiqueta está seleccionada para copiar/cortar */
+.event-badge.seleccionada,
 .etiqueta-calendario.seleccionada {
     outline: 2px dashed #0056b3;
     box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
