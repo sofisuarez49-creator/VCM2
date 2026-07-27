@@ -669,7 +669,11 @@ let aventurasGuardadas = [];
 let aventuraActiva = null;
 let aventuraEventos = [];
 let eventoEnEdicion = null;
-let eventosSeleccionados = [];
+let eventosSeleccionados = new Set();
+let celdaActiva = null;
+let ultimoEventoSeleccionado = null;
+let portapapelesEventos = [];
+let portapapelesModoCorte = false;
 
 const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const HORA_INICIO = 7;
@@ -686,47 +690,85 @@ function obtenerIntervalosHorarios() {
 
 const INTERVALOS_HORARIOS = obtenerIntervalosHorarios();
 
-function obtenerEventosParaMover(draggedIndex) {
-    const index = Number(draggedIndex);
-    if (!Number.isInteger(index) || !aventuraEventos[index]) return [];
-
-    const indicesParaMover = eventosSeleccionados.includes(index) ? eventosSeleccionados : [index];
-    return indicesParaMover
-        .filter((idx, pos, arr) => Number.isInteger(idx) && arr.indexOf(idx) === pos && aventuraEventos[idx])
-        .map(idx => ({ index: idx, evento: aventuraEventos[idx] }));
-}
-
-function validarMovimientoEventos(eventosParaMover, deltaDay, deltaSlot) {
-    const maxDay = (MAX_SEMANAS * 7) - 1;
-    const maxSlot = INTERVALOS_HORARIOS.length - 1;
-    const slotsPorDia = INTERVALOS_HORARIOS.length;
-    const totalSlotsCalendario = MAX_SEMANAS * 7 * slotsPorDia;
-
-    return eventosParaMover.every(({ evento }) => {
-        const nuevoDay = evento.day + deltaDay;
-        const nuevoSlot = evento.slot + deltaSlot;
-        const durationSlots = Math.max(1, Number(evento.durationSlots) || 1);
-        const inicioAbsoluto = (nuevoDay * slotsPorDia) + nuevoSlot;
-        const finAbsolutoExclusivo = inicioAbsoluto + durationSlots;
-
-        return nuevoDay >= 0 && nuevoDay <= maxDay
-            && nuevoSlot >= 0 && nuevoSlot <= maxSlot
-            && inicioAbsoluto >= 0
-            && finAbsolutoExclusivo <= totalSlotsCalendario;
-    });
-}
-
-function alternarSeleccionEvento(index, badge) {
-    const posicion = eventosSeleccionados.indexOf(index);
-    if (posicion === -1) {
-        eventosSeleccionados.push(index);
-        badge.classList.add('seleccionada');
-    } else {
-        eventosSeleccionados.splice(posicion, 1);
-        badge.classList.remove('seleccionada');
+function normalizarSeleccionEventos() {
+    eventosSeleccionados = new Set(
+        [...eventosSeleccionados].filter(index => Number.isInteger(index) && index >= 0 && index < aventuraEventos.length)
+    );
+    if (ultimoEventoSeleccionado !== null && !eventosSeleccionados.has(ultimoEventoSeleccionado)) {
+        ultimoEventoSeleccionado = eventosSeleccionados.size ? [...eventosSeleccionados].at(-1) : null;
     }
 }
 
+function seleccionarEventoCalendario(index, event = {}) {
+    if (!Number.isInteger(index) || index < 0 || index >= aventuraEventos.length) return;
+
+    if (event.shiftKey && ultimoEventoSeleccionado !== null) {
+        const inicio = Math.min(ultimoEventoSeleccionado, index);
+        const fin = Math.max(ultimoEventoSeleccionado, index);
+        eventosSeleccionados.clear();
+        for (let i = inicio; i <= fin; i++) eventosSeleccionados.add(i);
+    } else if (event.ctrlKey || event.metaKey) {
+        if (eventosSeleccionados.has(index)) {
+            eventosSeleccionados.delete(index);
+        } else {
+            eventosSeleccionados.add(index);
+            ultimoEventoSeleccionado = index;
+        }
+    } else {
+        eventosSeleccionados.clear();
+        eventosSeleccionados.add(index);
+        ultimoEventoSeleccionado = index;
+    }
+
+    renderCalendario();
+}
+
+function limpiarSeleccionCalendario() {
+    eventosSeleccionados.clear();
+    celdaActiva = null;
+    ultimoEventoSeleccionado = null;
+    renderCalendario();
+}
+
+function eliminarEventosSeleccionados() {
+    if (!eventosSeleccionados.size) return;
+    aventuraEventos = aventuraEventos.filter((_, index) => !eventosSeleccionados.has(index));
+    eventosSeleccionados.clear();
+    ultimoEventoSeleccionado = null;
+    renderCalendario();
+}
+
+function copiarEventosSeleccionados(cortar = false) {
+    if (!eventosSeleccionados.size) return;
+    const indices = [...eventosSeleccionados].sort((a, b) => a - b);
+    portapapelesEventos = indices.map(index => ({ ...aventuraEventos[index] }));
+    portapapelesModoCorte = cortar;
+}
+
+function pegarEventosSeleccionados() {
+    if (!portapapelesEventos.length || !celdaActiva) return;
+
+    const origen = portapapelesEventos[0];
+    const deltaDay = celdaActiva.day - origen.day;
+    const deltaSlot = celdaActiva.slot - origen.slot;
+    const nuevosEventos = portapapelesEventos.map(ev => ({
+        ...ev,
+        day: Math.max(0, Math.min((MAX_SEMANAS * 7) - 1, ev.day + deltaDay)),
+        slot: Math.max(0, Math.min(INTERVALOS_HORARIOS.length - 1, ev.slot + deltaSlot))
+    }));
+
+    if (portapapelesModoCorte) {
+        aventuraEventos = aventuraEventos.filter((_, index) => !eventosSeleccionados.has(index));
+        eventosSeleccionados.clear();
+        portapapelesModoCorte = false;
+    }
+
+    const primerNuevoIndice = aventuraEventos.length;
+    aventuraEventos.push(...nuevosEventos);
+    eventosSeleccionados = new Set(nuevosEventos.map((_, i) => primerNuevoIndice + i));
+    ultimoEventoSeleccionado = primerNuevoIndice;
+    renderCalendario();
+}
 
 async function openAventuraModal() {
     document.getElementById('modal-crear-aventura').classList.add('active');
@@ -843,6 +885,7 @@ function cambiarSemana(direccion) {
 }
 
 function renderCalendario() {
+    normalizarSeleccionEventos();
     const grid = document.getElementById('suenos-calendario-grid');
     grid.innerHTML = '';
     
@@ -905,6 +948,12 @@ function renderCalendario() {
             const diaAbsoluto = (semanaActual * 7) + dayIdx;
             const cell = document.createElement('div');
             cell.className = 'calendar-cell';
+            cell.tabIndex = 0;
+            cell.dataset.day = diaAbsoluto;
+            cell.dataset.slot = slotIdx;
+            if (celdaActiva && celdaActiva.day === diaAbsoluto && celdaActiva.slot === slotIdx) {
+                cell.classList.add('seleccionada');
+            }
             
             const infoCelda = matrizCeldas[diaAbsoluto][slotIdx];
             
@@ -916,8 +965,9 @@ function renderCalendario() {
             infoCelda.eventos.forEach(ev => {
                 const originalIndex = aventuraEventos.indexOf(ev);
                 const badge = document.createElement('div');
-                badge.className = `event-badge etiqueta-calendario bg-${ev.tipo}`;
-                if (eventosSeleccionados.includes(originalIndex)) {
+                badge.className = `event-badge bg-${ev.tipo}`;
+                badge.dataset.eventIndex = originalIndex;
+                if (eventosSeleccionados.has(originalIndex)) {
                     badge.classList.add('seleccionada');
                 }
                 badge.style.display = 'flex';
@@ -945,6 +995,19 @@ function renderCalendario() {
                         .map(index => index > originalIndex ? index - 1 : index);
                     renderCalendario();
                 };
+                const editBtn = document.createElement('span');
+                editBtn.innerHTML = '✎';
+                editBtn.style.cursor = 'pointer';
+                editBtn.style.fontWeight = 'bold';
+                editBtn.style.fontSize = '1rem';
+                editBtn.style.color = '#ffffff';
+                editBtn.style.padding = '0 2px';
+                editBtn.title = 'Editar etiqueta';
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    abrirEdicionEvento(originalIndex);
+                };
+                badge.appendChild(editBtn);
                 badge.appendChild(deleteBtn);
                 
                 badge.draggable = true;
@@ -959,10 +1022,12 @@ function renderCalendario() {
                 
                 badge.onclick = (e) => {
                     e.stopPropagation();
-                    if (e.ctrlKey || e.metaKey) {
-                        alternarSeleccionEvento(originalIndex, badge);
-                        return;
-                    }
+                    celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                    seleccionarEventoCalendario(originalIndex, e);
+                };
+
+                badge.ondblclick = (e) => {
+                    e.stopPropagation();
                     abrirEdicionEvento(originalIndex);
                 };
                 
@@ -983,31 +1048,69 @@ function renderCalendario() {
 
                     const ev = aventuraEventos[draggedIndex];
                     if (ev) {
-                        const originDay = Number.isInteger(dragData.originDay) ? dragData.originDay : ev.day;
-                        const originSlot = Number.isInteger(dragData.originSlot) ? dragData.originSlot : ev.slot;
-                        const deltaDay = diaAbsoluto - originDay;
-                        const deltaSlot = slotIdx - originSlot;
-                        const eventosParaMover = obtenerEventosParaMover(draggedIndex);
-
-                        if (!validarMovimientoEventos(eventosParaMover, deltaDay, deltaSlot)) {
-                            alert('No se puede mover la selección: uno o más eventos quedarían fuera del calendario.');
-                            return;
-                        }
-
-                        eventosParaMover.forEach(({ evento }) => {
-                            evento.day += deltaDay;
-                            evento.slot += deltaSlot;
-                        });
+                        ev.day = diaAbsoluto;
+                        ev.slot = slotIdx;
+                        celdaActiva = { day: diaAbsoluto, slot: slotIdx };
                         renderCalendario();
                     }
                 }
             };
             
-            cell.onclick = () => openEventoModal(diaAbsoluto, slotIdx);
+            cell.onclick = () => {
+                celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                eventosSeleccionados.clear();
+                ultimoEventoSeleccionado = null;
+                renderCalendario();
+                openEventoModal(diaAbsoluto, slotIdx);
+            };
+            cell.onfocus = () => {
+                celdaActiva = { day: diaAbsoluto, slot: slotIdx };
+                document.querySelectorAll('.calendar-cell.seleccionada').forEach(c => c.classList.remove('seleccionada'));
+                cell.classList.add('seleccionada');
+            };
             grid.appendChild(cell);
         });
     });
 }
+
+
+document.addEventListener('keydown', (e) => {
+    const target = e.target;
+    const estaEditandoTexto = target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+    );
+
+    if (estaEditandoTexto) return;
+
+    if ((e.key === 'Delete' || e.key === 'Backspace') && eventosSeleccionados.size) {
+        e.preventDefault();
+        eliminarEventosSeleccionados();
+        return;
+    }
+
+    if (e.key === 'Escape' && (eventosSeleccionados.size || celdaActiva)) {
+        e.preventDefault();
+        limpiarSeleccionCalendario();
+        return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'c' && eventosSeleccionados.size) {
+            e.preventDefault();
+            copiarEventosSeleccionados(false);
+        } else if (key === 'x' && eventosSeleccionados.size) {
+            e.preventDefault();
+            copiarEventosSeleccionados(true);
+        } else if (key === 'v' && portapapelesEventos.length && celdaActiva) {
+            e.preventDefault();
+            pegarEventosSeleccionados();
+        }
+    }
+});
 
 function openEventoModal(dayIdx, slotIdx) {
     eventoEnEdicion = null;
